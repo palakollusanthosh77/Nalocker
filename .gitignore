@@ -1,0 +1,22 @@
+# Virtual environment and caches
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Secrets and local config
+.env
+instance/
+
+# Private data: database and uploaded documents
+database.db
+*.db
+*.sqlite3
+uploads/*
+!uploads/.gitkeep
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

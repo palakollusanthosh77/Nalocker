@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block body %}
+<header class="topbar">
+  <div class="container topbar-inner">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">N</span> Na Locker</div>
+    <form method="post" action="{{ url_for('logout') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="btn btn-ghost">Log out</button>
+    </form>
+  </div>
+</header>
+
+<main class="container">
+  <section class="page-head">
+    <h1>Welcome, {{ session.user_name }}</h1>
+    <p class="muted">Upload, organise and find your documents.</p>
+  </section>
+
+  {% include "_flash.html" %}
+
+  <section class="stats" aria-label="Summary">
+    <div class="card stat"><span class="stat-label">Total documents</span><span class="stat-value">{{ total }}</span></div>
+    <div class="card stat"><span class="stat-label">Storage used</span><span class="stat-value">{{ storage }}</span></div>
+    <div class="card stat"><span class="stat-label">Account status</span><span class="stat-value"><span class="badge badge-ok">Active</span></span></div>
+  </section>
+
+  <section class="card" aria-labelledby="upload-title">
+    <h2 id="upload-title">Upload a document</h2>
+    <form method="post" action="{{ url_for('upload') }}" enctype="multipart/form-data" class="form" id="upload-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="document" name="document" class="dropzone-input" required
+               data-max-bytes="{{ max_mb * 1024 * 1024 }}"
+               accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx,.pptx,.doc,.txt">
+        <label for="document" class="dropzone-label">
+          <span class="dropzone-title" id="dropzone-title">Drag &amp; drop a file here, or click to browse</span>
+          <span class="muted small">{{ allowed }} · up to {{ max_mb }} MB</span>
+        </label>
+      </div>
+      <p class="field-error" id="upload-error" hidden></p>
+      <div class="form-row">
+        <div class="field">
+          <label for="display_name">Document name <span class="muted">(optional)</span></label>
+          <input type="text" id="display_name" name="display_name" maxlength="120" placeholder="Defaults to the file name">
+        </div>
+        <div class="field">
+          <label for="category">Category</label>
+          <select id="category" name="category" required>
+            {% for c in categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary">Upload document</button>
+    </form>
+  </section>
+
+  <section class="card" aria-labelledby="docs-title">
+    <div class="section-head">
+      <h2 id="docs-title">Your documents <span class="muted small">({{ shown }}{% if filtering %} of {{ total }}{% endif %})</span></h2>
+    </div>
+    <form method="get" action="{{ url_for('dashboard') }}" class="filters">
+      <div class="field">
+        <label for="q" class="sr-only">Search by name</label>
+        <input type="search" id="q" name="q" value="{{ q }}" placeholder="Search by document name" maxlength="100">
+      </div>
+      <div class="field">
+        <label for="filter-category" class="sr-only">Filter by category</label>
+        <select id="filter-category" name="category">
+          <option value="">All categories</option>
+          {% for c in categories %}<option value="{{ c }}" {{ 'selected' if c == selected_category }}>{{ c }}</option>{% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">Search</button>
+      {% if filtering %}<a class="btn btn-ghost" href="{{ url_for('dashboard') }}">Clear</a>{% endif %}
+    </form>
+
+    {% if docs %}
+    <div class="table-wrap">
+      <table class="docs-table">
+        <thead>
+          <tr><th scope="col">Document</th><th scope="col">Category</th><th scope="col">Uploaded</th><th scope="col" class="actions-col">Actions</th></tr>
+        </thead>
+        <tbody>
+        {% for d in docs %}
+          <tr>
+            <td data-label="Document">
+              <div class="doc-name">
+                <span class="file-icon ft-{{ d.file_type }}" aria-hidden="true">{{ d.file_type|upper }}</span>
+                <span class="doc-title">{{ d.display_name }}</span>
+              </div>
+            </td>
+            <td data-label="Category"><span class="badge">{{ d.category }}</span></td>
+            <td data-label="Uploaded">{{ d.uploaded_at }}</td>
+            <td data-label="Actions" class="actions">
+              <a class="btn btn-small" href="{{ url_for('download', doc_id=d.id) }}">Download</a>
+              <form method="post" action="{{ url_for('delete', doc_id=d.id) }}" data-confirm="Delete &quot;{{ d.display_name }}&quot;? This cannot be undone.">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="btn btn-small btn-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty">
+      {% if filtering %}
+        <h3>No matching documents</h3>
+        <p class="muted">Try a different search or <a href="{{ url_for('dashboard') }}">clear the filters</a>.</p>
+      {% else %}
+        <h3>Your locker is empty</h3>
+        <p class="muted">Upload your first document using the form above.</p>
+      {% endif %}
+    </div>
+    {% endif %}
+  </section>
+</main>
+<footer class="footer">Na Locker · {{ current_year }}</footer>
+{% endblock %}
